@@ -24,7 +24,6 @@ const userSchema = new mongoose.Schema(
     password: {
       type: String,
       minlength: 6,
-      select: false, 
     },
     googleId: {
       type: String,
@@ -41,11 +40,14 @@ const userSchema = new mongoose.Schema(
 
 
 userSchema.pre("save", async function (next) {
+  // Skip hashing if password is not present
   if (!this.isModified("password") || !this.password) return next();
+
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
   next();
 });
+
 
 
 userSchema.methods.generateAccessToken = function () {
@@ -61,5 +63,9 @@ userSchema.methods.generateRefreshToken = function () {
     expiresIn: process.env.REFRESH_TOKEN_EXPIRY || "7d",
   });
 };
+
+userSchema.methods.comparePassword = async function (password) {
+  return await bcrypt.compare(password,this.password)
+}
 
 export const User = mongoose.model("User", userSchema);

@@ -1,6 +1,13 @@
 import { Router } from "express";
 import passport from "../utils/passport.js";
 import { successResponse, errorResponse } from "../utils/responseHandler.js";
+import {
+  signin,
+  signup,
+  logout,
+  currentUser,
+} from "../controllers/auth.controller.js";
+import verifyJWT from "../middlewares/auth.middleware.js";
 
 const authRoute = Router();
 
@@ -21,5 +28,10 @@ authRoute.route("/google/callback").get(
     }
   }
 );
+
+authRoute.route("/signup").post(signup);
+authRoute.route("/signin").post(signin);
+authRoute.route("/logout").post(verifyJWT, logout);
+authRoute.route("/current-user").post(verifyJWT, currentUser);
 
 export default authRoute;

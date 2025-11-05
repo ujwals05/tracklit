@@ -1,6 +1,13 @@
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
-import { User } from "../models/user.model.js";
+import { User } from "../models/users.model.js";
+
+import dotenv from "dotenv"
+dotenv.config()
+
+// console.log("Google Client ID:", process.env.GOOGLE_CLIENT_ID);
+// console.log("Google Client Secret:", process.env.GOOGLE_CLIENT_SECRET);
+// console.log("Google Callback URL:", process.env.GOOGLE_CALLBACK_URL);
 
 passport.use(
   new GoogleStrategy(
@@ -25,8 +32,8 @@ passport.use(
         }
 
         // Generate JWT tokens using your schema methods
-        const jwtAccessToken = await user.accessToken();
-        const jwtRefreshToken = await user.refreshToken();
+        const jwtAccessToken = await user.generateAccessToken();
+        const jwtRefreshToken = await user.generateRefreshToken();
 
         // Prepare user object with tokens
         const userWithTokens = {

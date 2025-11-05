@@ -1,28 +1,32 @@
-import { User } from "../models/user.model.js";
-import bcrypt from "bcrypt";
+import { User } from "../models/users.model.js";
 import { successResponse, errorResponse } from "../utils/responseHandler.js";
 
-// Signup controller
 export const signup = async (req, res) => {
   try {
     const { username, fullName, email, password } = req.body;
 
-    // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser)
       return errorResponse(res, "User already exists with this email");
 
-    // Create new user
     const user = await User.create({ username, fullName, email, password });
 
-    // Generate tokens
-    const accessToken = await user.accessToken();
-    const refreshToken = await user.refreshToken();
+    const accessToken = user.generateAccessToken();
+    const refreshToken = user.generateRefreshToken();
+
+    user.refreshToken = refreshToken;
+    await user.save({ validateBeforeSave: false });
+
+    const { password: _, refreshToken: __, ...safeUser } = user.toObject();
 
     return successResponse(
       res,
       "Signup successful",
-      { user, accessToken, refreshToken },
+      {
+        user: safeUser,
+        accessToken,
+        refreshToken,
+      },
       201
     );
   } catch (err) {
@@ -30,27 +34,30 @@ export const signup = async (req, res) => {
   }
 };
 
-// Signin controller
 export const signin = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { username, email, password } = req.body;
 
-    // Find user
-    const user = await User.findOne({ email }).select("+password");
+    const user = await User.findOne({
+      $or: [{ username }, { email }],
+    }).select("+password");
     if (!user)
       return errorResponse(res, "Invalid email or password", null, 401);
 
-    // Check password
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await user.comparePassword(password);
     if (!isMatch)
       return errorResponse(res, "Invalid email or password", null, 401);
 
-    // Generate tokens
-    const accessToken = await user.accessToken();
-    const refreshToken = await user.refreshToken();
+    const accessToken = user.generateAccessToken();
+    const refreshToken = user.generateRefreshToken();
+
+    user.refreshToken = refreshToken;
+    await user.save({ validateBeforeSave: false });
+
+    const { password: _, refreshToken: __, ...safeUser } = user.toObject();
 
     return successResponse(res, "Signin successful", {
-      user,
+      user: safeUser,
       accessToken,
       refreshToken,
     });
@@ -59,12 +66,39 @@ export const signin = async (req, res) => {
   }
 };
 
-// Logout controller (for JWT, usually frontend just deletes tokens)
 export const logout = async (req, res) => {
   try {
-    // If you store refresh tokens in DB, remove it here
-    return successResponse(res, "Logout successful");
+    await User.findByIdAndUpdate(
+      req.user?._id,
+      { $unset: { refreshToken: 1 } },
+      { new: true }
+    );
+
+    const options = {
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+      path: "/",
+    };
+
+    res
+      .status(200)
+      .clearCookie("accessToken", options)
+      .clearCookie("refreshToken", options)
+      .json({ success: true, message: "Logged out successfully" });
   } catch (err) {
     return errorResponse(res, "Logout failed", err.message);
+  }
+};
+
+export const currentUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.user?._id).select(
+      "-password -refreshToken"
+    );
+    return successResponse(res, "Current user fetched successfully", user, 200);
+  } catch (error) {
+    console.log("Error while getting user", error);
+    return errorResponse(res, "No current user", null, 404);
   }
 };
