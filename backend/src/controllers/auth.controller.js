@@ -1,5 +1,6 @@
 import { User } from "../models/users.model.js";
-import { successResponse, errorResponse } from "../utils/responseHandler.js";
+
+import cloudinary from "../utils/cloudinary.js";
 
 export const signup = async (req, res) => {
   try {
@@ -142,5 +143,50 @@ export const currentUser = async (req, res) => {
     console.log("Error while getting user", error);
     // return errorResponse(res, "No current user", null, 404);
     return res.status(404).json({ success: false, message: error.message });
+  }
+};
+
+export const updateProfilePic = async (req, res) => {
+  try {
+    if (!req.file)
+      return res
+        .status(400)
+        .json({ success: false, message: "Please upload an image" });
+
+    // Upload to Cloudinary
+    const result = await cloudinary.uploader.upload_stream(
+      {
+        folder: "user_profiles",
+        resource_type: "image",
+      },
+      async (error, uploadResult) => {
+        if (error)
+          return res
+            .status(500)
+            .json({ success: false, message: "Upload failed", error });
+
+        // Update user profilePic
+        const updatedUser = await User.findByIdAndUpdate(
+          req.user._id,
+          { profilePic: uploadResult.secure_url },
+          { new: true }
+        ).select("-password -refreshToken");
+
+        res.status(200).json({
+          success: true,
+          message: "Profile picture updated successfully",
+          data: updatedUser,
+        });
+      }
+    );
+
+    result.end(req.file.buffer);
+  } catch (error) {
+    console.error("Error updating profile pic:", error);
+    res.status(500).json({
+      success: false,
+      message: "Something went wrong while updating profile picture",
+      error: error.message,
+    });
   }
 };

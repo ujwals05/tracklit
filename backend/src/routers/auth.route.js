@@ -6,8 +6,10 @@ import {
   signup,
   logout,
   currentUser,
+  updateProfilePic,
 } from "../controllers/auth.controller.js";
 import verifyJWT from "../middlewares/auth.middleware.js";
+import { upload } from "../middlewares/multer.middleware.js";
 
 const authRoute = Router();
 
@@ -33,5 +35,8 @@ authRoute.route("/signup").post(signup);
 authRoute.route("/signin").post(signin);
 authRoute.route("/logout").post(verifyJWT, logout);
 authRoute.route("/current-user").post(verifyJWT, currentUser);
+authRoute
+  .route("/update-profile-pic")
+  .put(verifyJWT, upload.single("profilePic"), updateProfilePic);
 
 export default authRoute;
