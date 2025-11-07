@@ -13,7 +13,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true,
       unique: true,
-      sparse: true, 
+      sparse: true,
     },
     email: {
       type: String,
@@ -28,16 +28,15 @@ const userSchema = new mongoose.Schema(
     googleId: {
       type: String,
       unique: true,
-      sparse: true, 
+      sparse: true,
     },
     profilePic: {
       type: String,
-      default: "", 
+      default: "",
     },
   },
   { timestamps: true }
 );
-
 
 userSchema.pre("save", async function (next) {
   // Skip hashing if password is not present
@@ -48,24 +47,22 @@ userSchema.pre("save", async function (next) {
   next();
 });
 
-
-
 userSchema.methods.generateAccessToken = function () {
   return jwt.sign(
-    { id: this._id, email: this.email },
+    { _id: this._id, email: this.email },
     process.env.ACCESS_TOKEN_SECRET,
     { expiresIn: process.env.ACCESS_TOKEN_EXPIRY || "15m" }
   );
 };
 
 userSchema.methods.generateRefreshToken = function () {
-  return jwt.sign({ id: this._id }, process.env.REFRESH_TOKEN_SECRET, {
+  return jwt.sign({ _id: this._id }, process.env.REFRESH_TOKEN_SECRET, {
     expiresIn: process.env.REFRESH_TOKEN_EXPIRY || "7d",
   });
 };
 
 userSchema.methods.comparePassword = async function (password) {
-  return await bcrypt.compare(password,this.password)
-}
+  return await bcrypt.compare(password, this.password);
+};
 
 export const User = mongoose.model("User", userSchema);

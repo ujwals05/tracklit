@@ -14,13 +14,11 @@ app.use(express.static("public"));
 app.use(cookieParser());
 app.use(passport.initialize());
 
-import authRoute from "./routers/auth.router.js";
-app.use("/api/auth",authRoute)
+import authRoute from "./routers/auth.route.js";
+app.use("/api/auth", authRoute);
 
 app.get("/", (_, res) => {
   res.send("APP IS RUNNING SUCCESSFULLY");
 });
-
-
 
 export default app;
