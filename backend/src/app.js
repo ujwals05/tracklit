@@ -15,7 +15,9 @@ app.use(cookieParser());
 app.use(passport.initialize());
 
 import authRoute from "./routers/auth.route.js";
+import expenseRoute from "./routers/expense.route.js";
 app.use("/api/auth", authRoute);
+app.use("/api/expense", expenseRoute);
 
 app.get("/", (_, res) => {
   res.send("APP IS RUNNING SUCCESSFULLY");
