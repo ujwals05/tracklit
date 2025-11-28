@@ -35,8 +35,8 @@ export const signup = async (req, res) => {
     // );
 
     const options = {
-      httoOnly: true,
-      secured: true,
+      httpOnly: true,
+      secure: true,
     };
 
     return res
@@ -52,16 +52,16 @@ export const signup = async (req, res) => {
 
 export const signin = async (req, res) => {
   try {
-    const { username, email, password } = req.body;
+    const { email, password } = req.body;
 
-    if (!username || !email)
+    if (!email)
       return res.status(400).json({
         success: false,
         message: "Username and email fields are required",
       });
 
     const user = await User.findOne({
-      $or: [{ username }, { email }],
+      $or: [ { email }],
     }).select("+password");
     if (!user)
       // return errorResponse(res, "Invalid email or password", null, 401);
@@ -85,8 +85,8 @@ export const signin = async (req, res) => {
     const { password: _, refreshToken: __, ...safeUser } = user.toObject();
 
     const options = {
-      httoOnly: true,
-      secured: true,
+      httpOnly: true,
+      secure: true,
     };
 
     return res

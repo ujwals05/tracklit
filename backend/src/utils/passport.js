@@ -2,12 +2,8 @@ import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { User } from "../models/users.model.js";
 
-import dotenv from "dotenv"
-dotenv.config()
-
-// console.log("Google Client ID:", process.env.GOOGLE_CLIENT_ID);
-// console.log("Google Client Secret:", process.env.GOOGLE_CLIENT_SECRET);
-// console.log("Google Callback URL:", process.env.GOOGLE_CALLBACK_URL);
+import dotenv from "dotenv";
+dotenv.config();
 
 passport.use(
   new GoogleStrategy(
@@ -18,10 +14,10 @@ passport.use(
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
-        // Check if user already exists
+        // Find user
         let user = await User.findOne({ googleId: profile.id });
 
-        // If not, create a new user
+        // Create if not exists
         if (!user) {
           user = await User.create({
             fullName: profile.displayName,
@@ -31,21 +27,8 @@ passport.use(
           });
         }
 
-        // Generate JWT tokens using your schema methods
-        const jwtAccessToken = await user.generateAccessToken();
-        const jwtRefreshToken = await user.generateRefreshToken();
-
-        // Prepare user object with tokens
-        const userWithTokens = {
-          _id: user._id,
-          fullName: user.fullName,
-          email: user.email,
-          profilePic: user.profilePic,
-          accessToken: jwtAccessToken,
-          refreshToken: jwtRefreshToken,
-        };
-
-        return done(null, userWithTokens);
+        // RETURN REAL MONGOOSE USER DOCUMENT
+        return done(null, user);
       } catch (err) {
         console.error("Google Auth Error:", err);
         return done(err, null);
@@ -54,8 +37,11 @@ passport.use(
   )
 );
 
-// For JWT-only, these are not required but kept harmless
-passport.serializeUser((user, done) => done(null, user));
-passport.deserializeUser((user, done) => done(null, user));
+// Keep these simple
+passport.serializeUser((user, done) => done(null, user._id));
+passport.deserializeUser(async (id, done) => {
+  const user = await User.findById(id);
+  done(null, user);
+});
 
 export default passport;

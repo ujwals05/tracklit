@@ -2,11 +2,19 @@ import express from "express";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import passport from "./utils/passport.js";
+import cors from "cors";
 
 dotenv.config({
   path: "./.env",
 });
 const app = express();
+
+app.use(
+  cors({
+    origin: " http://localhost:7001",
+    credentials: true,
+  })
+);
 
 app.use(express.json({ limit: "16kb" }));
 app.use(express.urlencoded({ extended: true }));
