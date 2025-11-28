@@ -5,7 +5,7 @@ import toast from "react-hot-toast";
 export const useAuthStore = create((set, get) => ({
   authUser: null,
   isCheckingAuth: true,
-  isLoggingIn: false,
+  isSigningIn: false,
   isSigningUp: false,
   isUpdatingProfilePic: false,
 
@@ -33,7 +33,7 @@ export const useAuthStore = create((set, get) => ({
   },
 
   signin: async (formData) => {
-    set({ isLoggingIn: true });
+    set({ isSigningIn: true });
     try {
       const res = await axiosInstance.post("/auth/signin", formData);
       toast.success("Login successful!");
@@ -41,7 +41,7 @@ export const useAuthStore = create((set, get) => ({
     } catch (err) {
       toast.error(err?.response?.data?.message || "Invalid credentials");
     } finally {
-      set({ isLoggingIn: false });
+      set({ isSigningIn: false });
     }
   },
 
