@@ -61,7 +61,7 @@ export const signin = async (req, res) => {
       });
 
     const user = await User.findOne({
-      $or: [ { email }],
+      $or: [{ email }],
     }).select("+password");
     if (!user)
       // return errorResponse(res, "Invalid email or password", null, 401);
@@ -188,5 +188,44 @@ export const updateProfilePic = async (req, res) => {
       message: "Something went wrong while updating profile picture",
       error: error.message,
     });
+  }
+};
+
+export const deleteAccount = async (req, res) => {
+  try {
+    const userId = req.user?._id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "User doesnt exist",
+      });
+    }
+
+    const deleteAccount = await User.findByIdAndDelete(userId);
+
+    if (!deleteAccount) {
+      return res.status(500).json({
+        success: false,
+        message: "Cannot delete the account",
+      });
+    }
+
+    const options = {
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+    };
+    return (
+      res
+        .status(200)
+        .clearCookie("accessToken", options)
+        .clearCookie("refreshToken", options)
+        .json({ success: true, message: "Successfully deleted user", data: {} })
+    );
+  } catch (error) {
+    console.log("Cannot delete the account ", error);
+    // return errorResponse(res, "No current user", null, 404);
+    return res.status(500).json({ success: false, message: error.message });
   }
 };

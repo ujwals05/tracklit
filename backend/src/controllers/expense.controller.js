@@ -1,4 +1,5 @@
 import { Expense } from "../models/expense.model.js";
+// import { CategoryRule } from "../models/category.model.js";
 import mongoose from "mongoose";
 
 export const addExpense = async (req, res) => {
@@ -134,9 +135,8 @@ export const getMonthlySummary = async (req, res) => {
       });
     }
 
-    // Month is 1-based (Jan = 1), so subtract 1 for JS Date
+    
     const start = new Date(year, month - 1, 1);
-    // Get the first day of the next month, then subtract 1 millisecond
     const end = new Date(year, month, 1);
 
     const summary = await Expense.aggregate([
@@ -150,11 +150,11 @@ export const getMonthlySummary = async (req, res) => {
         $group: {
           _id: "$category",
           totalAmount: { $sum: "$amount" },
-          count: { $sum: 1 }, // optional, to know how many expenses in that category
+          count: { $sum: 1 }, 
         },
       },
       {
-        $sort: { totalAmount: -1 }, // optional: sort by highest spending
+        $sort: { totalAmount: -1 }, 
       },
     ]);
 
@@ -172,3 +172,38 @@ export const getMonthlySummary = async (req, res) => {
     });
   }
 };
+
+export const getMonthlyExpenses = async (req, res) => {
+  try {
+    const { month, year } = req.query;
+
+    if (!year || !month) {
+      return res.status(400).json({
+        success: false,
+        message: "Year and month are required (e.g. ?year=2025&month=11)",
+      });
+    }
+
+    const monthIndex = parseInt(month) - 1; 
+    const start = new Date(year, monthIndex, 1);
+    const end = new Date(year, monthIndex + 1, 0, 23, 59, 59, 999); 
+
+    const expenses = await Expense.find({
+      userId: req.user._id,
+      date: { $gte: start, $lte: end },
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: expenses,
+    });
+  } catch (error) {
+    console.log("Error while getting monthly expenses:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error,
+    });
+  }
+};
+
