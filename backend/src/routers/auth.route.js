@@ -8,6 +8,7 @@ import {
   logout,
   currentUser,
   updateProfilePic,
+  deleteAccount,
 } from "../controllers/auth.controller.js";
 import verifyJWT from "../middlewares/auth.middleware.js";
 import { upload } from "../middlewares/multer.middleware.js";
@@ -60,17 +61,14 @@ authRoute.get(
   }
 );
 
-
-
 authRoute.route("/signup").post(signup);
 authRoute.route("/signin").post(signin);
 authRoute.route("/logout").post(verifyJWT, logout);
 authRoute
   .route("/current-user")
-  .post(verifyJWT, currentUser)
   .get(verifyJWT, currentUser);
 authRoute
   .route("/update-profile-pic")
   .put(verifyJWT, upload.single("profilePic"), updateProfilePic);
-
+authRoute.route("/deleteAccount").delete(verifyJWT, deleteAccount);
 export default authRoute;
