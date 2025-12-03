@@ -1,16 +1,35 @@
 import { Expense } from "../models/expense.model.js";
+import { Income } from "../models/income.model.js";
+import { Budget } from "../models/budget.model.js";
 // import { CategoryRule } from "../models/category.model.js";
 import mongoose from "mongoose";
 
 export const addExpense = async (req, res) => {
   try {
     const { title, amount, category, date, note } = req.body;
+    const userId = req.user._id;
     if (!title || !amount)
       return res
         .status(400)
         .json({ success: false, message: "Title and amount is required" });
+
+    const incomeExists = await Income.exists({ userId });
+    if (!incomeExists) {
+      return res.status(400).json({
+        success: false,
+        message: "You must add an income before adding expenses",
+      });
+    }
+
+    const budgetExists = await Budget.exists({ userId });
+    if (!budgetExists) {
+      return res.status(400).json({
+        success: false,
+        message: "You must set a budget before adding expenses",
+      });
+    }
     const expense = await Expense.create({
-      userId: req.user._id,
+      userId,
       title,
       amount,
       category,
@@ -135,7 +154,6 @@ export const getMonthlySummary = async (req, res) => {
       });
     }
 
-    
     const start = new Date(year, month - 1, 1);
     const end = new Date(year, month, 1);
 
@@ -150,11 +168,11 @@ export const getMonthlySummary = async (req, res) => {
         $group: {
           _id: "$category",
           totalAmount: { $sum: "$amount" },
-          count: { $sum: 1 }, 
+          count: { $sum: 1 },
         },
       },
       {
-        $sort: { totalAmount: -1 }, 
+        $sort: { totalAmount: -1 },
       },
     ]);
 
@@ -184,9 +202,9 @@ export const getMonthlyExpenses = async (req, res) => {
       });
     }
 
-    const monthIndex = parseInt(month) - 1; 
+    const monthIndex = parseInt(month) - 1;
     const start = new Date(year, monthIndex, 1);
-    const end = new Date(year, monthIndex + 1, 0, 23, 59, 59, 999); 
+    const end = new Date(year, monthIndex + 1, 0, 23, 59, 59, 999);
 
     const expenses = await Expense.find({
       userId: req.user._id,
@@ -206,4 +224,3 @@ export const getMonthlyExpenses = async (req, res) => {
     });
   }
 };
-

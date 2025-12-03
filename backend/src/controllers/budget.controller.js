@@ -1,4 +1,5 @@
 import { Budget } from "../models/budget.model.js";
+import { Income } from "../models/income.model.js";
 
 export const addBudget = async (req, res) => {
   try {
@@ -9,6 +10,14 @@ export const addBudget = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "All fields (amount, month, year, category) are required",
+      });
+    }
+
+    const incomeExists = await Income.exists({ userId });
+    if (!incomeExists) {
+      return res.status(400).json({
+        success: false,
+        message: "You must add an income before adding expenses",
       });
     }
 
