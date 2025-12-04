@@ -6,47 +6,61 @@ export const signup = async (req, res) => {
   try {
     const { username, fullName, email, password } = req.body;
 
-    const existingUser = await User.findOne({ email });
-    if (existingUser)
-      // return errorResponse(res, "User already exists with this email");
-      return res
-        .status(400)
-        .json({ success: false, message: "User already exist" });
+    // Check required fields
+    if (!username || !fullName || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required",
+      });
+    }
 
+    // Check if user exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: "User already exists with this email",
+      });
+    }
+
+    // Create new user
     const user = await User.create({ username, fullName, email, password });
 
+    // Generate tokens
     const accessToken = user.generateAccessToken();
     const refreshToken = user.generateRefreshToken();
 
+    // Save refresh token to DB
     user.refreshToken = refreshToken;
     await user.save({ validateBeforeSave: false });
 
+    // Remove sensitive data
     const { password: _, refreshToken: __, ...safeUser } = user.toObject();
 
-    // return successResponse(
-    //   res,
-    //   "Signup successful",
-    //   {
-    //     user: safeUser,
-    //     accessToken,
-    //     refreshToken,
-    //   },
-    //   201
-    // );
-
-    const options = {
+    // Cookie options
+    const cookieOptions = {
       httpOnly: true,
-      secure: true,
+      secure: process.env.NODE_ENV === "production", // true only in prod
+      sameSite: "strict",
+      path: "/",
     };
 
+    // Send response
     return res
       .status(201)
-      .cookie("accessToken", accessToken, options)
-      .cookie("refreshToken", refreshToken, options)
-      .json({ success: true, message: "Successfully logged in", data });
+      .cookie("accessToken", accessToken, cookieOptions)
+      .cookie("refreshToken", refreshToken, cookieOptions)
+      .json({
+        success: true,
+        message: "Signup successful",
+        data: safeUser,
+      });
   } catch (err) {
-    // return errorResponse(res, "Signup failed", err.message);
-    return res.status(400).json({ success: false, message: err.message });
+    return res.status(500).json({
+      success: false,
+      message: "Signup failed",
+      error: err.message,
+    });
   }
 };
 
@@ -64,14 +78,12 @@ export const signin = async (req, res) => {
       $or: [{ email }],
     }).select("+password");
     if (!user)
-      // return errorResponse(res, "Invalid email or password", null, 401);
       return res
         .status(401)
         .json({ success: false, message: "User not found" });
 
     const isMatch = await user.comparePassword(password);
     if (!isMatch)
-      // return errorResponse(res, "Invalid email or password", null, 401);
       return res
         .status(401)
         .json({ success: false, message: "Invalid email or password" });
@@ -216,13 +228,11 @@ export const deleteAccount = async (req, res) => {
       secure: true,
       sameSite: "none",
     };
-    return (
-      res
-        .status(200)
-        .clearCookie("accessToken", options)
-        .clearCookie("refreshToken", options)
-        .json({ success: true, message: "Successfully deleted user", data: {} })
-    );
+    return res
+      .status(200)
+      .clearCookie("accessToken", options)
+      .clearCookie("refreshToken", options)
+      .json({ success: true, message: "Successfully deleted user", data: {} });
   } catch (error) {
     console.log("Cannot delete the account ", error);
     // return errorResponse(res, "No current user", null, 404);
