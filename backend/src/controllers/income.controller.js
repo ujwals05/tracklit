@@ -56,7 +56,7 @@ export const getIncome = async (req, res) => {
     });
 
     if (income.length === 0) {
-      return res.status(404).json({
+      return res.status(200).json({
         success: false,
         message: "No income records found for this user",
       });
@@ -83,6 +83,14 @@ export const getIncomeById = async (req, res) => {
         success: false,
         message: "Unable to fetch the current Income",
       });
+
+    if (income.length === 0) {
+      return res.status(200).json({
+        success: false,
+        message: "No income records found for this user",
+      });
+    }
+
     return res.status(200).json(income);
   } catch (error) {
     console.log("Internal server error", error.message);
@@ -137,7 +145,6 @@ export const deleteIncome = async (req, res) => {
       });
     }
 
-    
     if (income.userId.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
@@ -145,7 +152,6 @@ export const deleteIncome = async (req, res) => {
       });
     }
 
-    
     await Income.findByIdAndDelete(req.params.id);
 
     return res.status(200).json({
@@ -176,7 +182,7 @@ export const monthlyIncome = async (req, res) => {
     }
 
     const start = new Date(year, month - 1, 1);
-    const end = new Date(year, month, 0); 
+    const end = new Date(year, month, 0);
 
     const incomes = await Income.find({
       userId: req.user._id,
@@ -184,9 +190,9 @@ export const monthlyIncome = async (req, res) => {
     }).sort({ date: -1 });
 
     if (incomes.length === 0) {
-      return res.status(404).json({
+      return res.status(200).json({
         success: false,
-        message: "No income records found for this month",
+        message: "No income records found for this user",
       });
     }
 
@@ -222,6 +228,13 @@ export const monthlyTotalIncome = async (req, res) => {
       userId: req.user._id,
       date: { $gte: start, $lte: end },
     }).sort({ date: -1 });
+
+    if (incomes.length === 0) {
+      return res.status(200).json({
+        success: false,
+        message: "No income records found for this user",
+      });
+    }
 
     // Calculate total income for the month
     const totalIncome = incomes.reduce((sum, income) => sum + income.amount, 0);

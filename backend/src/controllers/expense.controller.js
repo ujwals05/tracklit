@@ -1,7 +1,6 @@
 import { Expense } from "../models/expense.model.js";
 import { Income } from "../models/income.model.js";
 import { Budget } from "../models/budget.model.js";
-// import { CategoryRule } from "../models/category.model.js";
 import mongoose from "mongoose";
 
 export const addExpense = async (req, res) => {

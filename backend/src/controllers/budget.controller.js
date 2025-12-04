@@ -189,3 +189,76 @@ export const updateBudget = async (req, res) => {
     });
   }
 };
+
+export const monthlyBudget = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { month, year } = req.query;
+
+    if (!month || !year) {
+      return res.status(400).json({
+        success: false,
+        message: "Month and year are required",
+      });
+    }
+
+    const budgets = await Budget.find({
+      userId,
+      month: Number(month),
+      year: Number(year),
+    });
+
+    return res.status(200).json({
+      success: true,
+      count: budgets.length,
+      data: budgets,
+    });
+  } catch (error) {
+    console.error("Error fetching monthly budget:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+export const monthlyTotalBudget = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { month, year } = req.query;
+
+    if (!month || !year) {
+      return res.status(400).json({
+        success: false,
+        message: "Month and year are required",
+      });
+    }
+
+    const total = await Budget.aggregate([
+      {
+        $match: {
+          userId,
+          month: Number(month),
+          year: Number(year),
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalBudget: { $sum: "$amount" },
+        },
+      },
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      totalBudget: total[0]?.totalBudget || 0,
+    });
+  } catch (error) {
+    console.error("Error fetching monthly total budget:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
